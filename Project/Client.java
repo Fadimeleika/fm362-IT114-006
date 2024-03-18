@@ -1,4 +1,4 @@
-package Project.Part5;
+package Project;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -279,7 +279,7 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        Client Project = new Client();
+        Client client = new Client();
 
         try {
             // if start is private, it's valid here since this main is part of the class
