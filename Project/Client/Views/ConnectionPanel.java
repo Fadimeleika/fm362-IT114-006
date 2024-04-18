@@ -89,6 +89,10 @@ public class ConnectionPanel extends JPanel {
         controls.addPanel(CardView.CONNECT.name(), this);
     }
 
+    public ConnectionPanel() {
+        //TODO Auto-generated constructor stub
+    }
+
     public String getHost() {
         return host;
     }

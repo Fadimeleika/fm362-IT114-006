@@ -72,7 +72,7 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
         menu = new Menu(this);
         this.setJMenuBar(menu);
         // separate views
-        csPanel = new ConnectionPanel(null);
+        csPanel = new ConnectionPanel(this);
         userDetailsPanel = new UserDetailsPanel(this);
         
 
@@ -199,7 +199,7 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
     @Override
     public void onMessageReceive(long id, String message) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onMessageReceive'");
+        System.out.println("Received message from client " + id + ": " + message);
     }
 
     @Override
