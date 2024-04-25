@@ -4,6 +4,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.HashSet;
+
 
 import Project.Common.Constants;
 
@@ -12,7 +17,9 @@ public class Room implements AutoCloseable {
     // functions
     private String name;
     private List<ServerThread> clients = new ArrayList<ServerThread>();
+   //UCID: fm362 Date: 04/17/2024
     private List<String> mutedUsers = new ArrayList<>();
+    
     private boolean isRunning = false;
     // Commands
     private final static String COMMAND_TRIGGER = "/";
@@ -105,13 +112,18 @@ public class Room implements AutoCloseable {
                     case "roll":
                         processRollCommand(message, client);
                         break;
-                    //UCID: fm362 date:04/16/2024
-                     case COMMAND_MUTE:
-                        muteUser(targetUsername);
+                        case COMMAND_MUTE:
+                        if (client != null) {
+                            muteUser(targetUsername);
+                        }
                         break;
                     case COMMAND_UNMUTE:
-                        unmuteUser(targetUsername);
+                        if (client != null) {
+                            unmuteUser(targetUsername);
+                        }
                         break;
+                    //UCID: fm362 date:04/16/2024
+                     
                     /*
                      * case CREATE_ROOM:
                      * roomName = comm2[1];
@@ -140,27 +152,29 @@ public class Room implements AutoCloseable {
         }
         return wasCommand;
     }
-
-    private void muteUser(String username) {
+    //UCID: fm362 Date: 04/17/2024
+    public synchronized void muteUser(String username) {
         mutedUsers.add(username);
-        // Broadcast message informing clients that username has been muted
-        sendMessage(null, username + " has been muted.");
+        sendMessage(null, "User " + username + " has been muted.");
     }
-    
-    private void unmuteUser(String username) {
+
+    public synchronized void unmuteUser(String username) {
         mutedUsers.remove(username);
-        // Broadcast message informing clients that username has been unmuted
-        sendMessage(null, username + " has been unmuted.");
+        sendMessage(null, "User " + username + " has been unmuted.");
+    }
+
+    public synchronized boolean isMuted(String username) {
+        return mutedUsers.contains(username);
     }
     //UCID: fm362 date: 4/3/2024
     protected synchronized void processRollCommand(String message, ServerThread sender) {
         try {
-            // Remove the "/roll " part from the message
+            // Removing the "/roll " part from the message
             String rollCommand = message.replace("/roll ", "");
     
-            // Check if the roll command contains "d" (indicating dice roll)
+            // Checking if the roll command contains "d" (indicating dice roll)
             if (rollCommand.contains("d")) {
-                // Split the command by "d" to extract the number of dice and sides
+                // Spliting the command by "d" to extract the number of dice and sides
                 String[] parts = rollCommand.split("d");
                 if (parts.length != 2) {
                     sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "Invalid roll command format. Usage: /roll #d#");
@@ -172,7 +186,7 @@ public class Room implements AutoCloseable {
                 //UCID: fm362 date:4/3/2024
                 // Roll the dice
                 int total = 0;
-                StringBuilder rollResultMessage = new StringBuilder(sender.getClientName() + " rolled ");
+                StringBuilder rollResultMessage = new StringBuilder("<font color=\"purple\">" + sender.getClientName() + " rolled ");
                 for (int i = 0; i < numberOfDice; i++) {
                     int roll = (int) (Math.random() * numberOfSides) + 1;
                     total += roll;
@@ -181,15 +195,15 @@ public class Room implements AutoCloseable {
                     }
                     rollResultMessage.append(roll);
                 }
-                rollResultMessage.append(" (total: ").append(total).append(")");
+                rollResultMessage.append(" (total: ").append(total).append(")</font>");
     
-                // Broadcast the roll result to all clients in the room
+                // Broadcast roll result to all clients in the room
                 sendMessage(sender, rollResultMessage.toString());
             } else {
-                // If the command doesn't contain "d", treat it as a single dice roll
+                // If the command doesn't contain "d", will treat it as a single dice roll
                 int max = Integer.parseInt(rollCommand);
                 int result = (int) (Math.random() * max) + 1;
-                String rollResultMessage = String.format("%s rolled %d (1-%d)", sender.getClientName(), result, max);
+                String rollResultMessage = String.format("%s rolled %d (1-%d)","<font color=\"orange\">" + sender.getClientName() + result + " (-1" + max + ")</font>");
                 sendMessage(sender, rollResultMessage);
             }
         } catch (NumberFormatException e) {
@@ -201,43 +215,22 @@ public class Room implements AutoCloseable {
         // a random number (0 or 1) to represent heads or tails
         int result = (int) (Math.random() * 2);
     
-        // Determine the flip result
+        // Determining the flip result
         String flipResultMessage;
         if (result == 0) {
-            flipResultMessage = sender.getClientName() + " flipped heads";
+            flipResultMessage =  "<font color=\"blue\">" + sender.getClientName() + " flipped heads</font>";
         } else {
-            flipResultMessage = sender.getClientName() + " flipped tails";
+            flipResultMessage = "<font color=\"green\">" + sender.getClientName() + " flipped tails</font>";
         }
     
         // Broadcast the flip result to all clients in the room
         sendMessage(sender, flipResultMessage);
     }
     //UCID:fm362 Date:04/16/2024
-    protected synchronized void processMuteCommand(String message, ServerThread sender) {
-        // take the username from the message
-        String[] parts = message.split(" ");
-        if (parts.length < 2) {
-            // If the message format is incorrect, send an error message back to the sender
-            sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "Usage: /mute username");
-            return;
-        }
-        @SuppressWarnings("unused")
-        String targetUsername = parts[1];
-        // Logic to mute the target user...
-    }
     
-    protected synchronized void processUnmuteCommand(String message, ServerThread sender) {
-        // take the username from the message
-        String[] parts = message.split(" ");
-        if (parts.length < 2) {
-            // If the message format is incorrect, send an error message back to the sender
-            sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "Usage: /unmute username");
-            return;
-        }
-        @SuppressWarnings("unused")
-        String targetUsername = parts[1];
-        // Logic to unmute the target user...
-    }
+       // Logic to mute the target user...
+    
+       
     
 
     // Command helper methods
@@ -288,23 +281,34 @@ public class Room implements AutoCloseable {
         if (!isRunning) {
             return;
         }
+        if (sender == null) {
+            System.out.println("sender is null");
+        }
+        else {
+            System.out.println(sender.getClientId());
+        }
+        
         info("Sending message to " + clients.size() + " clients");
-        if (sender != null && processCommands(message, sender)) {
+       /*  if (sender != null && processCommands(message, sender)) {
             // it was a command, don't broadcast
             return;
-        }
+        }*/
+
 
         /// String from = (sender == null ? "Room" : sender.getClientName());
         long from = (sender == null) ? Constants.DEFAULT_CLIENT_ID : sender.getClientId();
         Iterator<ServerThread> iter = clients.iterator();
+        message = processTextCommand (message);
         while (iter.hasNext()) {
             ServerThread client = iter.next();
+            if (!isMuted(client.getClientName())) {
             boolean messageSent = client.sendMessage(from, message);
             if (!messageSent) {
                 handleDisconnect(iter, client);
             }
         }
     }
+}
 
     protected synchronized void sendConnectionStatus(ServerThread sender, boolean isConnected) {
         Iterator<ServerThread> iter = clients.iterator();
@@ -318,33 +322,28 @@ public class Room implements AutoCloseable {
         }
     }
     //UCID: fm362 date:04/16/2024
-    protected synchronized void sendPrivateMessage(ServerThread sender, String recipientUsername, String message) {
-        // Iterate through the clients in the room to find the recipient by their username
+    public synchronized void sendPrivateMessage(ServerThread sender, String recipientUsername, String message) {
+        if (isMuted(recipientUsername)) {
+            sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "User " + recipientUsername + " is muted.");
+            return;
+        }
+
+        boolean recipientFound = false;
         for (ServerThread client : clients) {
             if (client.getClientName().equals(recipientUsername)) {
-                // Send the private message to the specfic person
-                client.sendMessage(sender.getClientId(), message);
-                return;
+                client.sendMessage(sender.getClientId(), "[Private message from " + sender.getClientName() + "]: " + message);
+                sender.sendMessage(sender.getClientId(), "[Private message to " + recipientUsername + "]: " + message);
+                recipientFound = true;
+                break;
             }
         }
-        // If the person is not found, or not in the room, send an error message back to the sender
-        sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "Recipient not found or not in the room.");
+
+        if (!recipientFound) {
+            sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "User " + recipientUsername + " not found or offline.");
+        }
     }
     
-    private void handleDisconnect(Iterator<ServerThread> iter, ServerThread client) {
-        iter.remove();
-        info("Removed client " + client.getClientName());
-        checkClients();
-        sendMessage(null, client.getClientName() + " disconnected");
-    }
-
-    public void close() {
-        Server.INSTANCE.removeRoom(this);
-        // server = null;
-        isRunning = false;
-        clients = null;
-    }
-    protected synchronized void processTextCommand(String message) {
+    protected synchronized String processTextCommand(String message) {
         String formattedMessage = message;
         if (message.contains("**")) {
             formattedMessage = processBold(formattedMessage);
@@ -358,18 +357,16 @@ public class Room implements AutoCloseable {
         if (message.contains("__")) {
             formattedMessage = processUnderline(formattedMessage);
         }
-        broadcastFormattedMessage(formattedMessage);
+        return formattedMessage;
     }
-
-    //UCID:fm362 date:4/3/2024
     private String processBold(String message) {
-        // Implement bold processing here
+        // Implementing bold 
         return message.replaceAll("\\*\\*(.*?)\\*\\*", "<b>$1</b>");
     }
 
     //UCID:fm362 date:4/3/2024
     private String processItalic(String message) {
-        // Implement italic processing here
+        // Implementing italic 
         return message.replaceAll("\\*(.*?)\\*", "<i>$1</i>");
     }
 
@@ -385,14 +382,29 @@ public class Room implements AutoCloseable {
 
     //UCID:fm362 date:4/3/2024
     private String processUnderline(String message) {
-        // Implement underline processing here
-        return message.replaceAll("__", "<u>").replaceAll("__", "</u>");
+        // Implementing underline 
+        return message.replaceAll("__", "<u>");
     }
 
 
-    private void broadcastFormattedMessage(String formattedMessage) {
-        sendMessage(null, formattedMessage);
+    
+
+    
+    
+    private void handleDisconnect(Iterator<ServerThread> iter, ServerThread client) {
+        iter.remove();
+        info("Removed client " + client.getClientName());
+        checkClients();
+        sendMessage(null, client.getClientName() + " disconnected");
     }
+
+    public void close() {
+        Server.INSTANCE.removeRoom(this);
+        // server = null;
+        isRunning = false;
+        clients = null;
+    }
+   
     
     
     
@@ -403,7 +415,7 @@ public class Room implements AutoCloseable {
         Iterator<ServerThread> iter = clients.iterator();
         while (iter.hasNext()) {
             ServerThread client = iter.next();
-            boolean messageSent = client.sendMessage(Constants.DEFAULT_CLIENT_ID, result); // Adjusted here
+            boolean messageSent = client.sendMessage(Constants.DEFAULT_CLIENT_ID, result); 
             if (!messageSent) {
                 handleDisconnect(iter, client);
             }

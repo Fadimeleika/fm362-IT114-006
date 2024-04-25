@@ -27,11 +27,13 @@ public class ServerThread extends Thread {
     // private Server server;// ref to our server so we can call methods on it
     // more easily
     private Room currentRoom;
+    private boolean isMuted = false;
     private Logger logger = Logger.getLogger(ServerThread.class.getName());
 
     private void info(String message) {
         logger.info(String.format("Thread[%s]: %s", getClientName(), message));
     }
+   
 
     public ServerThread(Socket myClient/* , Room room */) {
         info("Thread created");
@@ -63,10 +65,12 @@ public class ServerThread extends Thread {
     protected String getClientName() {
         return clientName;
     }
+   
 
     protected synchronized Room getCurrentRoom() {
         return currentRoom;
     }
+   
 
     protected synchronized void setCurrentRoom(Room room) {
         if (room != null) {
@@ -80,6 +84,21 @@ public class ServerThread extends Thread {
         info("Thread being disconnected by server");
         isRunning = false;
         cleanup();
+    }
+    public void mute() {
+        isMuted = true;
+        sendMessage(Constants.DEFAULT_CLIENT_ID, "You have been muted.");
+    }
+
+    // Method to unmute the user
+    public void unmute() {
+        isMuted = false;
+        sendMessage(Constants.DEFAULT_CLIENT_ID, "You have been unmuted.");
+    }
+
+    // Method to check if the user is muted
+    public boolean isMuted() {
+        return isMuted;
     }
 
     // send methods
@@ -114,15 +133,18 @@ public class ServerThread extends Thread {
         }
         return send(rp);
     }
-       // UCID: Fm362 Date: 4/3/2024
+    
+    // UCID: Fm362 Date: 4/3/2024
     public boolean sendMessage(long from, String message) {
         Payload payload = new Payload();
         payload.setPayloadType(PayloadType.MESSAGE);
         // p.setClientName(from);
         payload.setClientId(from);
-        payload.setMessage(message);
+        payload.setMessage(String.format("[%s]: %s", from, message));
         return send(payload);
     }
+
+    
 
     /**
      * Used to associate client names and their ids from the server perspective
@@ -227,11 +249,29 @@ public class ServerThread extends Thread {
                         Room.joinRoom(Constants.LOBBY, this);
                         
                     }
+                    //UCID: fm362 Date: 04/17/2024
+                } else if (message.startsWith("/mute")) {
+                    if (currentRoom != null) {
+                        String[] parts = message.split(" ", 2);
+                        if (parts.length == 2) {
+                            String username = parts[1];
+                            currentRoom.muteUser(username);
+                        }
+                    }
+                } else if (message.startsWith("/unmute")) {
+                    if (currentRoom != null) {
+                        String[] parts = message.split(" ", 2);
+                        if (parts.length == 2) {
+                            String username = parts[1];
+                            currentRoom.unmuteUser(username);
+                        }
+                    }
+                
                 //UCID: fm362 Date:04/16/2024
                 } else if (message.startsWith("@")) { // Private message handling
-                    String[] parts = message.split(" ", 2); // Split the message into username and actual message
+                    String[] parts = message.split(" ", 2); // Spliting the message into username and actual message
                     if (parts.length == 2) {
-                        String username = parts[0].substring(1); // Remove the "@" symbol
+                        String username = parts[0].substring(1); // Removing the "@" symbol
                         String privateMessage = parts[1];
                         if (currentRoom != null) {
                             currentRoom.sendPrivateMessage(this, username, privateMessage);
@@ -272,6 +312,8 @@ public class ServerThread extends Thread {
                 break;
         }
     }
+
+   
 
     private void cleanup() {
         info("Thread cleanup() start");

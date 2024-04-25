@@ -8,6 +8,10 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.logging.Logger;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import Project.Common.Constants;
 import Project.Common.TextFX;
@@ -24,6 +28,7 @@ public enum Server {
     private Queue<ServerThread> incomingClients = new LinkedList<ServerThread>();
     private boolean isRunning = true;
     private long nextClientId = 1;// <-- uniquely identifies clients (could use a UUID but we're keeping it basic)
+    
     private Logger logger = Logger.getLogger(Server.class.getName());
 
     private void start(int port) {
@@ -199,32 +204,12 @@ public enum Server {
         }
     }
 
-    /**
-     * This would be used for sending messages across Rooms (most of your logic will
-     * be in the Room class rather than here)
-     * 
-     * @param message
-     */
-    protected synchronized void broadcast(String message) {
-        if (processCommand(message)) {
+    
+        
+        
 
-            return;
-        }
-        // loop over rooms and send out the message
-        Iterator<Room> it = rooms.iterator();
-        while (it.hasNext()) {
-            Room room = it.next();
-            if (room != null) {
-                room.sendMessage(null, message);
-            }
-        }
-    }
-
-    private boolean processCommand(String message) {
-        logger.info("Checking command: " + message);
-        // TODO
-        return false;
-    }
+   
+    
 
     public static void main(String[] args) {
         Server.INSTANCE.logger.info("Starting Server");

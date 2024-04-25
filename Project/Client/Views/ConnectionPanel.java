@@ -24,14 +24,7 @@ public class ConnectionPanel extends JPanel {
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
        
-        //UCID: fm362 Date:04/15/2024
-        // Add username info
-        JLabel usernameLabel = new JLabel("Username:");
-        usernameField = new JTextField();
-        JLabel usernameError = new JLabel();
-        content.add(usernameLabel);
-        content.add(usernameField);
-        content.add(usernameError);
+        
 
         // add host info
         JLabel hostLabel = new JLabel("Host:");
@@ -52,15 +45,8 @@ public class ConnectionPanel extends JPanel {
         // add listener
         button.addActionListener((event) -> {
             boolean isValid = true;
-            // UCID:fm362 Date:04/15/2024
-            //  this is to check if username contains spaces
-            if (usernameField.getText().contains(" ")) {
-                usernameError.setText("Username cannot contain spaces");
-                usernameError.setVisible(true);
-                isValid = false;
-            } else {
-                usernameError.setVisible(false);
-            }
+            
+            
             try {
                 port = Integer.parseInt(portValue.getText());
                 portError.setVisible(false);

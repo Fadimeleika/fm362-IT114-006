@@ -20,6 +20,7 @@ import Project.Client.ICardControls;
 public class UserDetailsPanel extends JPanel {
     private static Logger logger = Logger.getLogger(UserDetailsPanel.class.getName());
     private String username;
+    private String userId;
 
     public UserDetailsPanel(ICardControls controls) {
         super(new BorderLayout(10, 10));
