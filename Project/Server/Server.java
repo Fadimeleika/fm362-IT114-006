@@ -203,7 +203,12 @@ public enum Server {
             logger.info("Removed empty room " + r.getName());
         }
     }
-
+    
+    private boolean processCommand(String message) {
+        System.out.println("Checking command: " + message);
+        // TODO
+        return false;
+    }
     
         
         

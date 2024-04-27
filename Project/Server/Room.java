@@ -109,9 +109,7 @@ public class Room implements AutoCloseable {
                 wasCommand = true;
                 switch (command) {
                     //UCID:fm362 Date:4/3/2024 
-                    case "roll":
-                        processRollCommand(message, client);
-                        break;
+                    
                         case COMMAND_MUTE:
                         if (client != null) {
                             muteUser(targetUsername);
@@ -197,10 +195,10 @@ public class Room implements AutoCloseable {
                 }
                 rollResultMessage.append(" (total: ").append(total).append(")</font>");
     
-                // Broadcast roll result to all clients in the room
+                
                 sendMessage(sender, rollResultMessage.toString());
             } else {
-                // If the command doesn't contain "d", will treat it as a single dice roll
+                
                 int max = Integer.parseInt(rollCommand);
                 int result = (int) (Math.random() * max) + 1;
                 String rollResultMessage = String.format("%s rolled %d (1-%d)","<font color=\"orange\">" + sender.getClientName() + result + " (-1" + max + ")</font>");
@@ -212,10 +210,10 @@ public class Room implements AutoCloseable {
     }
     //UCID: fm362 date:4/3/2024
     protected synchronized void processFlipCommand(ServerThread sender) {
-        // a random number (0 or 1) to represent heads or tails
+        
         int result = (int) (Math.random() * 2);
     
-        // Determining the flip result
+        
         String flipResultMessage;
         if (result == 0) {
             flipResultMessage =  "<font color=\"blue\">" + sender.getClientName() + " flipped heads</font>";
@@ -223,12 +221,10 @@ public class Room implements AutoCloseable {
             flipResultMessage = "<font color=\"green\">" + sender.getClientName() + " flipped tails</font>";
         }
     
-        // Broadcast the flip result to all clients in the room
+        
         sendMessage(sender, flipResultMessage);
     }
-    //UCID:fm362 Date:04/16/2024
     
-       // Logic to mute the target user...
     
        
     
