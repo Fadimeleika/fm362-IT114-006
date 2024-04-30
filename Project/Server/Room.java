@@ -1,0 +1,423 @@
+package Project.Server;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.HashSet;
+
+
+import Project.Common.Constants;
+
+public class Room implements AutoCloseable {
+    // protected static Server server;// used to refer to accessible server
+    // functions
+    private String name;
+    private List<ServerThread> clients = new ArrayList<ServerThread>();
+   //UCID: fm362 Date: 04/17/2024
+    private List<String> mutedUsers = new ArrayList<>();
+
+    
+    private boolean isRunning = false;
+    // Commands
+    private final static String COMMAND_TRIGGER = "/";
+   //UCID: fm362 Date:04/16/2024 
+    private final static String COMMAND_MUTE = "mute";
+    private final static String COMMAND_UNMUTE = "unmute";
+    // private final static String CREATE_ROOM = "createroom";
+    // private final static String JOIN_ROOM = "joinroom";
+    // private final static String DISCONNECT = "disconnect";
+    // private final static String LOGOUT = "logout";
+    // private final static String LOGOFF = "logoff";
+    private Logger logger = Logger.getLogger(Room.class.getName());
+
+	public synchronized List<String> getMuteList() {
+        return new ArrayList<>(mutedUsers);
+    }
+
+    public Room(String name) {
+        this.name = name;
+        isRunning = true;
+    }
+
+    private void info(String message) {
+        logger.info(String.format("Room[%s]: %s", name, message));
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    protected synchronized void addClient(ServerThread client) {
+        if (!isRunning) {
+            return;
+        }
+        client.setCurrentRoom(this);
+        client.sendJoinRoom(getName());// clear first
+        if (clients.indexOf(client) > -1) {
+            info("Attempting to add a client that already exists");
+        } else {
+            clients.add(client);
+            // connect status second
+            sendConnectionStatus(client, true);
+            syncClientList(client);
+        }
+
+
+    }
+
+    protected synchronized void removeClient(ServerThread client) {
+        if (!isRunning) {
+            return;
+        }
+        clients.remove(client);
+        // we don't need to broadcast it to the server
+        // only to our own Room
+        if (clients.size() > 0) {
+            // sendMessage(client, "left the room");
+            sendConnectionStatus(client, false);
+        }
+        checkClients();
+    }
+
+    /***
+     * Checks the number of clients.
+     * If zero, begins the cleanup process to dispose of the room
+     */
+    private void checkClients() {
+        // Cleanup if room is empty and not lobby
+        if (!name.equalsIgnoreCase(Constants.LOBBY) && clients.size() == 0) {
+            close();
+        }
+    }
+
+    /***
+     * Helper function to process messages to trigger different functionality.
+     * 
+     * @param message The original message being sent
+     * @param client  The sender of the message (since they'll be the ones
+     *                triggering the actions)
+     */
+    private boolean processCommands(String message, ServerThread client) {
+        boolean wasCommand = false;
+        try {
+            if (message.startsWith(COMMAND_TRIGGER)) {
+                String[] comm = message.split(COMMAND_TRIGGER);
+                String part1 = comm[1];
+                String[] comm2 = part1.split(" ");
+                String command = comm2[0];
+                String targetUsername = comm2[1]; // Assuming the target username follows the command
+                // String roomName;
+                wasCommand = true;
+                switch (command) {
+                    //UCID:fm362 Date:4/3/2024 
+                    
+                        case COMMAND_MUTE:
+                        if (client != null) {
+                            muteUser(targetUsername);
+                        }
+                        break;
+                    case COMMAND_UNMUTE:
+                        if (client != null) {
+                            unmuteUser(targetUsername);
+                        }
+                        break;
+                    //UCID: fm362 date:04/16/2024
+                     
+                    /*
+                     * case CREATE_ROOM:
+                     * roomName = comm2[1];
+                     * Room.createRoom(roomName, client);
+                     * break;
+                     * case JOIN_ROOM:
+                     * roomName = comm2[1];
+                     * Room.joinRoom(roomName, client);
+                     * break;
+                     */
+                    /*
+                     * case DISCONNECT:
+                     * case LOGOUT:
+                     * case LOGOFF:
+                     * Room.disconnectClient(client, this);
+                     * break;
+                     */
+                    default:
+                        wasCommand = false;
+                        break;
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return wasCommand;
+    }
+    //UCID: fm362 Date: 04/28/2024
+    public synchronized void muteUser(String username) {
+        mutedUsers.add(username);
+        sendMessage(null, "User " + username + " has been muted.");
+    }
+
+    public synchronized void unmuteUser(String username) {
+        mutedUsers.remove(username);
+        sendMessage(null, "User " + username + " has been unmuted.");
+        
+    }
+
+    public synchronized boolean isMuted(String username) {
+        return mutedUsers.contains(username);
+    }
+    //UCID: fm362 date: 4/3/2024
+    protected synchronized void processRollCommand(String message, ServerThread sender) {
+        try {
+            // Removing the "/roll " part from the message
+            String rollCommand = message.replace("/roll ", "");
+    
+            
+            if (rollCommand.contains("d")) {
+                
+                String[] parts = rollCommand.split("d");
+                if (parts.length != 2) {
+                    sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "Invalid roll command format. Usage: /roll #d#");
+                    return;
+                }
+                
+                int numberOfDice = Integer.parseInt(parts[0]);
+                int numberOfSides = Integer.parseInt(parts[1]);
+                //UCID: fm362 date:4/3/2024
+                // Roll the dice
+                int total = 0;
+                StringBuilder rollResultMessage = new StringBuilder("<font color=\"purple\">" + sender.getClientName() + " rolled ");
+                for (int i = 0; i < numberOfDice; i++) {
+                    int roll = (int) (Math.random() * numberOfSides) + 1;
+                    total += roll;
+                    if (i > 0) {
+                        rollResultMessage.append(", ");
+                    }
+                    rollResultMessage.append(roll);
+                }
+                rollResultMessage.append(" (total: ").append(total).append(")</font>");
+    
+                
+                sendMessage(sender, rollResultMessage.toString());
+            } else {
+                
+                int max = Integer.parseInt(rollCommand);
+                int result = (int) (Math.random() * max) + 1;
+                String rollResultMessage = String.format("%s rolled %d (1-%d)","<font color=\"orange\">" + sender.getClientName() + result + " (-1" + max + ")</font>");
+                sendMessage(sender, rollResultMessage);
+            }
+        } catch (NumberFormatException e) {
+            sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "Invalid roll command format. Usage: /roll # or /roll #d#");
+        }
+    }
+    //UCID: fm362 date:4/3/2024
+    protected synchronized void processFlipCommand(ServerThread sender) {
+        
+        int result = (int) (Math.random() * 2);
+    
+        
+        String flipResultMessage;
+        if (result == 0) {
+            flipResultMessage =  "<font color=\"blue\">" + sender.getClientName() + " flipped heads</font>";
+        } else {
+            flipResultMessage = "<font color=\"green\">" + sender.getClientName() + " flipped tails</font>";
+        }
+    
+        
+        sendMessage(sender, flipResultMessage);
+    }
+    
+    
+       
+    
+
+    // Command helper methods
+    private synchronized void syncClientList(ServerThread joiner) {
+        Iterator<ServerThread> iter = clients.iterator();
+        while (iter.hasNext()) {
+            ServerThread st = iter.next();
+            if (st.getClientId() != joiner.getClientId()) {
+                joiner.sendClientMapping(st.getClientId(), st.getClientName());
+            }
+        }
+    }
+    protected static void createRoom(String roomName, ServerThread client) {
+        if (Server.INSTANCE.createNewRoom(roomName)) {
+            // server.joinRoom(roomName, client);
+            Room.joinRoom(roomName, client);
+        } else {
+            client.sendMessage(Constants.DEFAULT_CLIENT_ID, String.format("Room %s already exists", roomName));
+        }
+    }
+
+    protected static void joinRoom(String roomName, ServerThread client) {
+        if (!Server.INSTANCE.joinRoom(roomName, client)) {
+            client.sendMessage(Constants.DEFAULT_CLIENT_ID, String.format("Room %s doesn't exist", roomName));
+        }
+    }
+
+    protected static List<String> listRooms(String searchString, int limit) {
+        return Server.INSTANCE.listRooms(searchString, limit);
+    }
+
+    protected static void disconnectClient(ServerThread client, Room room) {
+        client.setCurrentRoom(null);
+        client.disconnect();
+        room.removeClient(client);
+    }
+    // end command helper methods
+
+    /***
+     * Takes a sender and a message and broadcasts the message to all clients in
+     * this room. Client is mostly passed for command purposes but we can also use
+     * it to extract other client info.
+     * 
+     * @param sender  The client sending the message
+     * @param message The message to broadcast inside the room
+     */
+    protected synchronized void sendMessage(ServerThread sender, String message) {
+        if (!isRunning) {
+            return;
+        }
+        if (sender == null) {
+            System.out.println("sender is null");
+        }
+        else {
+            System.out.println(sender.getClientId());
+        }
+        
+        info("Sending message to " + clients.size() + " clients");
+         if (sender != null && processCommands(message, sender)) {
+            // it was a command, don't broadcast
+            return;
+        }
+
+
+        /// String from = (sender == null ? "Room" : sender.getClientName());
+        long from = (sender == null) ? Constants.DEFAULT_CLIENT_ID : sender.getClientId();
+        Iterator<ServerThread> iter = clients.iterator();
+        message = processTextCommand (message);
+        while (iter.hasNext()) {
+            ServerThread client = iter.next();
+            if (!isMuted(client.getClientName())) {
+            boolean messageSent = client.sendMessage(from, message);
+            if (!messageSent) {
+                handleDisconnect(iter, client);
+            }
+        }
+    }
+}
+
+    protected synchronized void sendConnectionStatus(ServerThread sender, boolean isConnected) {
+        Iterator<ServerThread> iter = clients.iterator();
+        while (iter.hasNext()) {
+            ServerThread client = iter.next();
+            boolean messageSent = client.sendConnectionStatus(sender.getClientId(), sender.getClientName(),
+                    isConnected);
+            if (!messageSent) {
+                handleDisconnect(iter, client);
+            }
+        }
+    }
+    //UCID: fm362 date:04/16/2024
+    public synchronized void sendPrivateMessage(ServerThread sender, String recipientUsername, String message) {
+        
+
+        boolean recipientFound = false;
+        for (ServerThread client : clients) {
+            if (client.getClientName().equals(recipientUsername)) {
+                client.sendMessage(sender.getClientId(), "[Private message from " + sender.getClientName() + "]: " + message);
+                sender.sendMessage(sender.getClientId(), "[Private message to " + recipientUsername + "]: " + message);
+                recipientFound = true;
+                break;
+            }
+        }
+
+        if (!recipientFound) {
+            sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "User " + recipientUsername + " not found or offline.");
+        }
+    }
+    
+    protected synchronized String processTextCommand(String message) {
+        String formattedMessage = message;
+        if (message.contains("**")) {
+            formattedMessage = processBold(formattedMessage);
+        }
+        if (message.contains("*")) {
+            formattedMessage = processItalic(formattedMessage);
+        }
+        if (message.contains("<color=")) {
+            formattedMessage = processColor(formattedMessage);
+        }
+        if (message.contains("__")) {
+            formattedMessage = processUnderline(formattedMessage);
+        }
+        return formattedMessage;
+    }
+    private String processBold(String message) {
+        // Implementing bold 
+        return message.replaceAll("\\*\\*(.*?)\\*\\*", "<b>$1</b>");
+    }
+
+    //UCID:fm362 date:4/3/2024
+    private String processItalic(String message) {
+        // Implementing italic 
+        return message.replaceAll("\\*(.*?)\\*", "<i>$1</i>");
+    }
+
+    //UCID:fm362 date:4/3/2024
+    private String processColor(String message) {
+        String formattedMessage = message;
+        formattedMessage = formattedMessage.replaceAll("<color=red>(.*?)</color>", "<font color=\"red\">$1</font>");
+        formattedMessage = formattedMessage.replaceAll("<color=green>(.*?)</color>", "<font color=\"green\">$1</font>");
+        formattedMessage = formattedMessage.replaceAll("<color=blue>(.*?)</color>", "<font color=\"blue\">$1</font>");
+        return formattedMessage;
+    }
+   
+
+    //UCID:fm362 date:4/3/2024
+    private String processUnderline(String message) {
+        // Implementing underline 
+        return message.replaceAll("__", "<u>");
+    }
+
+
+    
+
+    
+    
+    private void handleDisconnect(Iterator<ServerThread> iter, ServerThread client) {
+        iter.remove();
+        info("Removed client " + client.getClientName());
+        checkClients();
+        sendMessage(null, client.getClientName() + " disconnected");
+    }
+
+    public void close() {
+        Server.INSTANCE.removeRoom(this);
+        // server = null;
+        isRunning = false;
+        clients = null;
+    }
+   
+    
+    
+    
+    protected synchronized void broadcastCommandResult(String result) {
+        if (!isRunning) {
+            return;
+        }
+        Iterator<ServerThread> iter = clients.iterator();
+        while (iter.hasNext()) {
+            ServerThread client = iter.next();
+            boolean messageSent = client.sendMessage(Constants.DEFAULT_CLIENT_ID, result); 
+            if (!messageSent) {
+                handleDisconnect(iter, client);
+            }
+        }
+    } 
+}
