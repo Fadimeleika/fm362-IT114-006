@@ -43,7 +43,7 @@ public enum Client {
     private static final String LIST_USERS = "/users";
     private static final String DISCONNECT = "/disconnect";
 
-    private static final String ROLL = "/roll";
+    
 
     // client id, is the key, client name is the value
     // private ConcurrentHashMap<Long, String> clientsInRoom = new
@@ -277,24 +277,17 @@ public enum Client {
          * return true;
          * }
          */
-        else if (text.equalsIgnoreCase(ROLL)) {
-            try {
-                sendRoll();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         
-            return true;
-        }
+        
+            
         return false;
     }
 
+
+
     // Send methods
-    private void sendRoll() throws IOException {
-        Payload p = new Payload();
-        p.setPayloadType(PayloadType.ROLL);
-        out.writeObject(p);
-    }
+    
+        
 
   
     

@@ -1,9 +1,14 @@
 package Project.Server;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -86,12 +91,22 @@ public class ServerThread extends Thread {
         cleanup();
     }
     public void mute() {
+        //UCID: fm362 Date: 04/29/2024
+        if (!isMuted) {
+            
+            return;
+        }
         isMuted = true;
         sendMessage(Constants.DEFAULT_CLIENT_ID, "You have been muted.");
     }
 
     // Method to unmute the user
     public void unmute() {
+        //UCID: fm362 Date: 04/29/2024
+        if (!isMuted) {
+            
+            return;
+        }
         isMuted = false;
         sendMessage(Constants.DEFAULT_CLIENT_ID, "You have been unmuted.");
     }
@@ -100,6 +115,8 @@ public class ServerThread extends Thread {
     public boolean isMuted() {
         return isMuted;
     }
+
+  
 
     // send methods
     protected boolean sendClientMapping(long id, String name) {

@@ -33,6 +33,10 @@ public class Room implements AutoCloseable {
     // private final static String LOGOFF = "logoff";
     private Logger logger = Logger.getLogger(Room.class.getName());
 
+	public synchronized List<String> getMuteList() {
+        return new ArrayList<>(mutedUsers);
+    }
+
     public Room(String name) {
         this.name = name;
         isRunning = true;
@@ -150,7 +154,7 @@ public class Room implements AutoCloseable {
         }
         return wasCommand;
     }
-    //UCID: fm362 Date: 04/17/2024
+    //UCID: fm362 Date: 04/28/2024
     public synchronized void muteUser(String username) {
         mutedUsers.add(username);
         sendMessage(null, "User " + username + " has been muted.");
@@ -159,6 +163,7 @@ public class Room implements AutoCloseable {
     public synchronized void unmuteUser(String username) {
         mutedUsers.remove(username);
         sendMessage(null, "User " + username + " has been unmuted.");
+        
     }
 
     public synchronized boolean isMuted(String username) {
@@ -319,6 +324,7 @@ public class Room implements AutoCloseable {
     }
     //UCID: fm362 date:04/16/2024
     public synchronized void sendPrivateMessage(ServerThread sender, String recipientUsername, String message) {
+        
         if (isMuted(recipientUsername)) {
             sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "User " + recipientUsername + " is muted.");
             return;
@@ -418,4 +424,3 @@ public class Room implements AutoCloseable {
         }
     } 
 }
-

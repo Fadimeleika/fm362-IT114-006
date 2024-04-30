@@ -15,6 +15,8 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 
 import Project.Client.ClientUtils;
+import Project.Common.TextFX;
+import Project.Common.TextFX.Color;
 
 public class UserListPanel extends JPanel {
     private JPanel userListArea;
@@ -74,6 +76,7 @@ public class UserListPanel extends JPanel {
                 new Dimension(content.getWidth(), ClientUtils.calcHeightForText(this, clientName, content.getWidth())));
         textContainer.setMaximumSize(textContainer.getPreferredSize());
         textContainer.setEditable(false);
+      
         // remove background and border (comment these out to see what it looks like
         // otherwise)
         ClientUtils.clearBackground(textContainer);

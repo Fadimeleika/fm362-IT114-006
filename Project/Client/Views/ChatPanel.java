@@ -11,7 +11,11 @@ import java.awt.event.ContainerEvent;
 import java.awt.event.ContainerListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,6 +38,7 @@ public class ChatPanel extends JPanel {
     private static Logger logger = Logger.getLogger(ChatPanel.class.getName());
     private JPanel chatArea = null;
     private UserListPanel userListPanel;
+    private List<String> chatHistory;
 
     public ChatPanel(ICardControls controls) {
         super(new BorderLayout(10, 10));
@@ -103,6 +108,8 @@ public class ChatPanel extends JPanel {
         this.add(input, BorderLayout.SOUTH);
         this.setName(CardView.CHAT.name());
         controls.addPanel(CardView.CHAT.name(), this);
+        //UCID: fm362 Date: 04/27/2024
+        chatHistory = new ArrayList<>();
         chatArea.addContainerListener(new ContainerListener() {
 
             @Override
@@ -154,6 +161,24 @@ public class ChatPanel extends JPanel {
 
     public void clearUserList() {
         userListPanel.clearUserList();
+    }
+    //UCID: fm362 Date: 04/27/2024 //testing
+    public void addMessageToHistory(String message) {
+        chatHistory.add(message);
+    }
+     //UCID: fm362 Date: 04/27/2024
+    public void exportChatHistoryToFile() {
+        String fileName = "savingdata.txt";
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+            for (String message : chatHistory) {
+                writer.write(message);
+                writer.newLine();
+            }
+            System.out.println("The Chat history is sent to file: " + fileName);
+        } catch (IOException e) {
+            System.err.println("There was an error sending chat history to file: " + e.getMessage());
+        }
     }
 
     public void addText(String text) {
