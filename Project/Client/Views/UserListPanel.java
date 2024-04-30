@@ -64,7 +64,7 @@ public class UserListPanel extends JPanel {
         });
     }
 
-    protected void addUserListItem(long clientId, String clientName, boolean isMuted, boolean isLastMessageSender) {
+    protected void addUserListItem(long clientId, String clientName) {
         logger.log(Level.INFO, "Adding user to list: " + clientName);
         JPanel content = userListArea;
         logger.log(Level.INFO, "Userlist: " + content.getSize());
