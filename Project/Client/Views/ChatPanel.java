@@ -162,7 +162,7 @@ public class ChatPanel extends JPanel {
     public void clearUserList() {
         userListPanel.clearUserList();
     }
-    //UCID: fm362 Date: 04/27/2024
+    //UCID: fm362 Date: 04/27/2024 //testing
     public void addMessageToHistory(String message) {
         chatHistory.add(message);
     }

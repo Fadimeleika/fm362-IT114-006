@@ -19,7 +19,6 @@ public class Room implements AutoCloseable {
     private List<ServerThread> clients = new ArrayList<ServerThread>();
    //UCID: fm362 Date: 04/17/2024
     private List<String> mutedUsers = new ArrayList<>();
-
     
     private boolean isRunning = false;
     // Commands
@@ -176,9 +175,9 @@ public class Room implements AutoCloseable {
             // Removing the "/roll " part from the message
             String rollCommand = message.replace("/roll ", "");
     
-            
+            // Checking if the roll command contains "d" (indicating dice roll)
             if (rollCommand.contains("d")) {
-                
+                // Spliting the command by "d" to extract the number of dice and sides
                 String[] parts = rollCommand.split("d");
                 if (parts.length != 2) {
                     sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "Invalid roll command format. Usage: /roll #d#");
@@ -291,10 +290,10 @@ public class Room implements AutoCloseable {
         }
         
         info("Sending message to " + clients.size() + " clients");
-         if (sender != null && processCommands(message, sender)) {
+       /*  if (sender != null && processCommands(message, sender)) {
             // it was a command, don't broadcast
             return;
-        }
+        }*/
 
 
         /// String from = (sender == null ? "Room" : sender.getClientName());
@@ -326,6 +325,10 @@ public class Room implements AutoCloseable {
     //UCID: fm362 date:04/16/2024
     public synchronized void sendPrivateMessage(ServerThread sender, String recipientUsername, String message) {
         
+        if (isMuted(recipientUsername)) {
+            sender.sendMessage(Constants.DEFAULT_CLIENT_ID, "User " + recipientUsername + " is muted.");
+            return;
+        }
 
         boolean recipientFound = false;
         for (ServerThread client : clients) {
